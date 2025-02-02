@@ -279,11 +279,7 @@
                         },
                         error => {
                             console.warn('Geolocation error:', error);
-                            currentPosition = {
-                                latitude: 51.4325,
-                                longitude: 6.7652
-                            };
-                            resolve(currentPosition);
+                            reject(new Error("Standortbestimmung nicht möglich"));
                         }
                     );
                 } else {
@@ -414,8 +410,6 @@
         }
 
         let currentViewIndex = 0;
-
-        
 
         // Initial update
         updateWeather();
