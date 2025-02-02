@@ -75,6 +75,7 @@
             position: relative;
             overflow: hidden;
         }
+
         .view {
             display: none;
             opacity: 0;
@@ -120,9 +121,116 @@
             flex-grow: 1;
         }
 
+        .weather-icon svg {
+            width: 5vmin;
+            height: 5vmin;
+        }
+
+        .wind-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 10vmin;
+            min-width: 10vmin;
+            flex-shrink: 0;
+        }
+
+        .wind-icon svg {
+            width: 6vmin;
+            height: 6vmin;
+        }
+
+        @keyframes windWave {
+            0% { transform: translateX(-2px); }
+            50% { transform: translateX(2px); }
+            100% { transform: translateX(-2px); }
+        }
+        
+        @keyframes sunPulse {
+            0% { opacity: 0.85; }
+            50% { opacity: 1; }
+            100% { opacity: 0.85; }
+        }
+        
+        @keyframes cloudFloat {
+            0% { transform: translateX(-1px); }
+            50% { transform: translateX(1px); }
+            100% { transform: translateX(-1px); }
+        }
+        
+        @keyframes rainDrop {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(15px); opacity: 0; }
+        }
+        
+        @keyframes snowSway {
+            0% { transform: translateX(-2px); }
+            50% { transform: translateX(2px); }
+            100% { transform: translateX(-2px); }
+        }
+        
+        @keyframes lightning {
+            0% { opacity: 0.3; }
+            3% { opacity: 1; }
+            6% { opacity: 0.3; }
+            9% { opacity: 1; }
+            12% { opacity: 0.3; }
+            100% { opacity: 0.3; }
+        }
+        
+        .wind-wave {
+            animation: windWave 2s ease-in-out infinite;
+        }
+        
+        .sun-rays {
+            animation: sunPulse 3s ease-in-out infinite;
+        }
+        
+        .cloud-body {
+            animation: cloudFloat 3s ease-in-out infinite;
+        }
+        
+        .rain-drops line {
+            animation: rainDrop 1.5s linear infinite;
+        }
+        .rain-drops line:nth-child(2) { animation-delay: -0.5s; }
+        .rain-drops line:nth-child(3) { animation-delay: -1s; }
+        
+        .snow-flakes circle {
+            animation: snowSway 2s ease-in-out infinite;
+        }
+        
+        .snow-flakes circle:nth-child(2) {
+            animation-delay: -0.6s;
+        }
+        
+        .snow-flakes circle:nth-child(3) {
+            animation-delay: -1.2s;
+        }
+        
+        .lightning {
+            animation: lightning 5s ease-in-out infinite;
+        }
+        
+        #wind-arrow {
+            transition: transform 0.5s ease-in-out;
+        }
+
+        #third-view {
+            align-items: center;
+        }
+
+        #third-view .details {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-left: 1.5vmin;
+        }
+
         .data-point {
             opacity: 0.9;
             white-space: nowrap;
+            line-height: 1.6;
         }
 
         #error-message {
@@ -179,6 +287,89 @@
     </div>
     <div id="error-message"></div>
 
+    <!-- Wetter Icons -->
+    <svg id="wind-svg-icon" viewBox="0 0 100 100">
+        <g id="wind-arrow" transform="translate(50,50)">
+            <!-- Pfeil -->
+            <path d="M0,-25 L-8,-15 L0,-20 L8,-15 Z" 
+                fill="white"/>
+            
+            <!-- Wellenlinien -->
+            <g class="wind-wave">
+                <path d="M-25,0 Q-15,-10 -5,0 Q5,10 15,0 Q25,-10 35,0" 
+                    fill="none" 
+                    stroke="white" 
+                    stroke-width="3"
+                    stroke-linecap="round"/>
+                <path d="M-35,15 Q-25,5 -15,15 Q-5,25 5,15 Q15,5 25,15" 
+                    fill="none" 
+                    stroke="white" 
+                    stroke-width="2.5"
+                    stroke-linecap="round"/>
+            </g>
+        </g>
+    </svg>
+
+    <div id="weather-icons" style="display: none;">
+        <!-- Sonne -->
+        <svg id="sun-icon" viewBox="0 0 100 100">
+            <g class="sun-rays">
+                <circle cx="50" cy="50" r="20" fill="white"/>
+                <g stroke="white" stroke-width="6" stroke-linecap="round">
+                    <line x1="50" y1="15" x2="50" y2="5"/>
+                    <line x1="50" y1="95" x2="50" y2="85"/>
+                    <line x1="15" y1="50" x2="5" y2="50"/>
+                    <line x1="95" y1="50" x2="85" y2="50"/>
+                    <line x1="25" y1="25" x2="18" y2="18"/>
+                    <line x1="75" y1="75" x2="82" y2="82"/>
+                    <line x1="25" y1="75" x2="18" y2="82"/>
+                    <line x1="75" y1="25" x2="82" y2="18"/>
+                </g>
+            </g>
+        </svg>
+
+        <!-- Wolke -->
+        <svg id="cloud-icon" viewBox="0 0 100 100">
+            <path class="cloud-body" 
+                d="M25,60 Q0,60 0,40 Q0,20 20,20 Q20,0 45,0 Q70,0 70,20 Q90,20 90,40 Q90,60 65,60 Z" 
+                fill="white"/>
+        </svg>
+
+        <!-- Regen -->
+        <svg id="rain-icon" viewBox="0 0 100 100">
+            <path class="cloud-body" 
+                d="M25,45 Q0,45 0,25 Q0,5 20,5 Q20,-15 45,-15 Q70,-15 70,5 Q90,5 90,25 Q90,45 65,45 Z" 
+                fill="white"/>
+            <g class="rain-drops" stroke="white" stroke-width="4" stroke-linecap="round">
+                <line x1="25" y1="55" x2="20" y2="70"/>
+                <line x1="45" y1="55" x2="40" y2="70"/>
+                <line x1="65" y1="55" x2="60" y2="70"/>
+            </g>
+        </svg>
+
+        <!-- Schnee -->
+        <svg id="snow-icon" viewBox="0 0 100 100">
+            <path class="cloud-body" 
+                d="M25,45 Q0,45 0,25 Q0,5 20,5 Q20,-15 45,-15 Q70,-15 70,5 Q90,5 90,25 Q90,45 65,45 Z" 
+                fill="white"/>
+            <g class="snow-flakes" fill="white">
+                <circle cx="30" cy="65" r="4"/>
+                <circle cx="50" cy="60" r="4"/>
+                <circle cx="70" cy="65" r="4"/>
+            </g>
+        </svg>
+
+        <!-- Gewitter -->
+        <svg id="storm-icon" viewBox="0 0 100 100">
+            <path class="cloud-body" 
+                d="M25,45 Q0,45 0,25 Q0,5 20,5 Q20,-15 45,-15 Q70,-15 70,5 Q90,5 90,25 Q90,45 65,45 Z" 
+                fill="white"/>
+            <path class="lightning" 
+                d="M45,40 L30,60 L45,60 L35,80 L60,55 L45,55 L55,40 Z" 
+                fill="white"/>
+        </svg>
+    </div>
+      
     <script>
         function getUrlParameters() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -210,11 +401,59 @@
 
         function getWeatherIcon(data) {
             const { snowfall, rain, showers } = data.current;
-            if (snowfall > 0) return '❄';
-            if (rain > 0 || showers > 0) {
-                return rain > showers ? '🌧' : '🌦';
+            const humidity = data.current.relative_humidity_2m;
+            const temp = data.current.temperature_2m;
+            
+            let iconId;
+            
+            // Schneefälle
+            if (snowfall > 0 || temp < 0) {
+                iconId = 'snow-icon';
             }
-            return data.current.relative_humidity_2m > 85 ? '☁' : '☀';
+            // Starker Regen oder Gewitter
+            else if (rain > 2 || showers > 2) {
+                iconId = 'storm-icon';
+            }
+            // Leichter Regen oder Schauer
+            else if (rain > 0 || showers > 0) {
+                iconId = 'rain-icon';
+            }
+            // Bewölkt
+            else if (humidity > 85) {
+                iconId = 'cloud-icon';
+            }
+            // Sonnig
+            else {
+                iconId = 'sun-icon';
+            }
+            
+            const icon = document.getElementById(iconId).cloneNode(true);
+            icon.removeAttribute('id');
+            return icon.outerHTML;
+        }
+
+        function getWindIcon(speed, direction) {
+            // Kopiere das Basis-Icon
+            const windIcon = document.getElementById('wind-svg-icon').cloneNode(true);
+            windIcon.removeAttribute('id');
+            
+            // Rotiere entsprechend der Windrichtung
+            const arrow = windIcon.querySelector('#wind-arrow');
+            arrow.setAttribute('transform', `translate(50,50) rotate(${direction})`);
+            
+            // Passe Animationsgeschwindigkeit basierend auf Windgeschwindigkeit an
+            const waves = windIcon.querySelector('.wind-wave');
+            const animationDuration = Math.max(3 - (speed / 20), 0.5); // Schneller bei mehr Wind
+            waves.style.animation = `windWave ${animationDuration}s ease-in-out infinite`;
+            
+            // Passe Opacity der Linien basierend auf Windgeschwindigkeit an
+            const paths = windIcon.querySelectorAll('path');
+            const opacity = Math.min(0.4 + (speed / 50), 1);
+            paths.forEach(path => {
+                path.style.opacity = opacity;
+            });
+            
+            return windIcon.outerHTML;
         }
 
         function formatCoordinates(lat, lon) {
@@ -299,14 +538,14 @@
 
                 const data = await weatherResponse.json();
 
-                // Update Location
+                // Location
                 if (shouldShowModule('location')) {
                     document.getElementById('location-text').textContent = locationName;
                 } else {
                     document.querySelector('.location-header').style.display = 'none';
                 }
                 
-                // Update Koordinaten und Zeit
+                // Koordinaten und Zeit
                 if (shouldShowModule('geo-location')) {
                     document.getElementById('coordinates').textContent = 
                         formatCoordinates(currentPosition.latitude, currentPosition.longitude);
@@ -317,7 +556,7 @@
                 document.getElementById('local-time').textContent = 
                     formatTime(data.current.time);
                 
-                // Update Temperatur View
+                // Temperatur View
                 if (shouldShowModule('temperature')) {
                     document.getElementById('main-view').style.display = 'flex';
                     document.getElementById('temp').textContent = 
@@ -330,11 +569,10 @@
                     document.getElementById('main-view').style.display = 'none';
                 }
 
-                // Update Wetter Details View
+                // Wetter Details View
                 if (shouldShowModule('weather')) {
                     document.getElementById('second-view').style.display = 'flex';
-                    document.getElementById('weather-icon').innerHTML = 
-                        getWeatherIcon(data);
+                    document.getElementById('weather-icon').innerHTML = getWeatherIcon(data);
                     document.getElementById('precipitation').textContent = 
                         (data.current.rain + data.current.showers).toFixed(1);
                     document.getElementById('humidity').textContent = 
@@ -343,9 +581,11 @@
                     document.getElementById('second-view').style.display = 'none';
                 }
 
-                // Update Wind Details View
+                // Wind Details View
                 if (shouldShowModule('wind')) {
                     document.getElementById('third-view').style.display = 'flex';
+                    document.querySelector('.wind-icon').innerHTML = 
+                        getWindIcon(data.current.wind_speed_10m, data.current.wind_direction_10m);
                     document.getElementById('wind').textContent = 
                         Math.round(data.current.wind_speed_10m);
                     document.getElementById('wind-direction').textContent = 
@@ -374,7 +614,6 @@
             // Force browser reflow
             void textElement.offsetWidth;
             
-            // Check if text is wider than container
             if (textElement.scrollWidth > container.clientWidth) {
                 textElement.classList.add('animate');
             }
