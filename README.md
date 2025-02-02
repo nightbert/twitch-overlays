@@ -1,6 +1,6 @@
 # Twitch Tools und Overlays
 
-Eine kleine (bald) Sammlung nützlicher Tools und Twitchoverlays. Entweder zum selber hosten oder über [meine Webseite](https://nightbert.de).
+Eine kleine (bald) Sammlung nützlicher Tools und Twitch-Overlays. Entweder zum selber hosten oder über [meine Webseite](https://nightbert.de).
 
 ## Wetter Overlay
 ![Vorschau des Wetter Overlays](https://nightbert.de/twitch/thumbnails/weather-overlay.png)
