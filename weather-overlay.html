@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 2vmin;
+            font-size: 1.6vmin;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: white;
+            text-shadow: 0.2vmin 0.2vmin 0.4vmin rgba(0,0,0,0.5);
+            background: transparent;
+        }
+
+        a {
+            color: white;
+            text-decoration: dotted;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .copyright {
+            text-align: left;
+            font-size: 1.2vmin;
+            margin-top: 0.5vmin;
+            opacity: 0.7;
+        }
+
+        .weather-container {
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1.5vmin 2.5vmin;
+            border-radius: 1vmin;
+            backdrop-filter: blur(0.5vmin);
+            width: 35vmin;
+            height: 15vmin;
+            box-sizing: border-box;
+        }
+
+        .location-header {
+            margin-bottom: 1.5vmin;
+        }
+
+        .location {
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 2.1vmin;
+        }
+        
+        .location-text {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: 100%;
+        } 
+
+        .sub-info {
+            display: flex;
+            font-size: 1.4vmin;
+            opacity: 0.8;
+            gap: 1.5vmin;
+        }
+
+        .weather-content {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        .view {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            width: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .view.active {
+            display: flex;
+            opacity: 1;
+            position: relative;
+        }
+
+        .main-temp, .weather-icon, .wind-icon {
+            font-size: 4vmin;
+            margin-right: 1.5vmin;
+            width: 10vmin;
+            min-width: 10vmin;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .main-temp {
+            font-size: 4vmin;
+            margin-right: 1.5vmin;
+            min-width: 12vmin;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .details {
+            font-size: 1.6vmin;
+            line-height: 1.4;
+            flex-grow: 1;
+        }
+
+        .data-point {
+            opacity: 0.9;
+            white-space: nowrap;
+        }
+
+        #error-message {
+            color: #ff6b6b;
+            display: none;
+            margin-top: 1vmin;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <!-- Fixed Location Header -->
+        <div class="location-header">
+            <div class="location" id="location">
+                <span class="location-text" id="location-text">Wird geladen...</span>
+            </div>
+            <div class="sub-info">
+                <div id="coordinates">--</div>
+                <div>Ortszeit: <span id="local-time">--</span></div>
+            </div>
+        </div>
+
+        <div class="weather-content">
+            <!-- Temperatur View -->
+            <div class="view active" id="main-view">
+                <div class="main-temp">
+                    <span id="temp">--</span>&deg;C
+                </div>
+                <div class="details">
+                    <div class="data-point">Höhe: <span id="elevation">--</span> m</div>
+                    <div class="data-point">Gefühlt: <span id="feels">--</span>&deg;C</div>
+                </div>
+            </div>
+
+            <!-- Wetter Details View -->
+            <div class="view" id="second-view">
+                <div class="weather-icon" id="weather-icon"></div>
+                <div class="details">
+                    <div class="data-point">Niederschlag: <span id="precipitation">--</span> mm</div>
+                    <div class="data-point">Luftfeuchtigkeit: <span id="humidity">--</span>%</div>
+                </div>
+            </div>
+
+            <!-- Wind Details -->
+            <div class="view" id="third-view">
+                <div class="wind-icon">💨</div>
+                <div class="details">
+                    <div class="data-point">Wind: <span id="wind">--</span> km/h</div>
+                    <div class="data-point">Richtung: <span id="wind-direction">--</span>°</div>
+                </div>
+            </div>
+        </div>
+        <div class="copyright">Data from <a href="https://open-meteo.com/">Open Meteo</a> & <a href="https://openstreetmap.org">openstreetmap</a></div>
+    </div>
+    <div id="error-message"></div>
+
+    <script>
+        function getUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                hiddenModules: new Set(urlParams.getAll('hide')),
+                fixedLocation: {
+                    latitude: urlParams.get('lat'),
+                    longitude: urlParams.get('lon')
+                }
+            };
+        }
+        const { hiddenModules, fixedLocation } = getUrlParameters();
+
+        function shouldShowModule(moduleName) {
+            return !hiddenModules.has(moduleName);
+        }
+
+        let currentPosition = {
+            latitude: null,
+            longitude: null
+        };
+
+        const WEATHER_ICONS = {
+            SNOW: '&#10052;',
+            RAIN: '&#127783;',
+            SUN: '&#9728;',
+            CLOUD: '&#9729;'
+        };
+
+        function getWeatherIcon(data) {
+            const { snowfall, rain, showers } = data.current;
+            if (snowfall > 0) return '❄';
+            if (rain > 0 || showers > 0) {
+                return rain > showers ? '🌧' : '🌦';
+            }
+            return data.current.relative_humidity_2m > 85 ? '☁' : '☀';
+        }
+
+        function formatCoordinates(lat, lon) {
+            const latDir = lat >= 0 ? 'N' : 'S';
+            const lonDir = lon >= 0 ? 'E' : 'W';
+            return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`;
+        }
+
+        function formatTime(isoString) {
+            return new Date(isoString).toLocaleTimeString('de-DE', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        async function getLocationName(lat, lon) {
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=de`
+                );
+                const data = await response.json();
+                
+                let locationName = '';
+                if (data.address) {
+                    locationName = data.address.city || 
+                                 data.address.town || 
+                                 data.address.village || 
+                                 data.address.suburb ||
+                                 data.address.municipality ||
+                                 'Unbekannter Ort';
+
+                    if (data.address.state) {
+                        locationName += `, ${data.address.state}`;
+                    }
+                }
+                return locationName;
+            } catch (error) {
+                console.error('Fehler beim Abrufen des Ortsnamens:', error);
+                return 'Unbekannter Ort';
+            }
+        }
+
+        async function getLocation() {
+            // Wenn fixe Koordinaten in der URL angegeben sind, verwende diese
+            if (fixedLocation.latitude && fixedLocation.longitude) {
+                currentPosition = {
+                    latitude: parseFloat(fixedLocation.latitude),
+                    longitude: parseFloat(fixedLocation.longitude)
+                };
+                return currentPosition;
+            }
+        
+            return new Promise((resolve, reject) => {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            currentPosition = {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            };
+                            resolve(currentPosition);
+                        },
+                        error => {
+                            console.warn('Geolocation error:', error);
+                            currentPosition = {
+                                latitude: 51.4325,
+                                longitude: 6.7652
+                            };
+                            resolve(currentPosition);
+                        }
+                    );
+                } else {
+                    reject(new Error("Geolocation nicht verfügbar"));
+                }
+            });
+        }
+
+        async function updateWeather() {
+            try {
+                await getLocation();
+                
+                const [weatherResponse, locationName] = await Promise.all([
+                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentPosition.latitude}&longitude=${currentPosition.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,rain,showers,snowfall,wind_speed_10m,wind_direction_10m&timezone=auto`),
+                    shouldShowModule('location') ? getLocationName(currentPosition.latitude, currentPosition.longitude) : 'Location Hidden'
+                ]);
+
+                const data = await weatherResponse.json();
+
+                // Update Location
+                if (shouldShowModule('location')) {
+                    document.getElementById('location-text').textContent = locationName;
+                } else {
+                    document.querySelector('.location-header').style.display = 'none';
+                }
+                
+                // Update Koordinaten und Zeit
+                if (shouldShowModule('geo-location')) {
+                    document.getElementById('coordinates').textContent = 
+                        formatCoordinates(currentPosition.latitude, currentPosition.longitude);
+                } else {
+                    document.getElementById('coordinates').style.display = 'none';
+                }
+                
+                document.getElementById('local-time').textContent = 
+                    formatTime(data.current.time);
+                
+                // Update Temperatur View
+                if (shouldShowModule('temperature')) {
+                    document.getElementById('main-view').style.display = 'flex';
+                    document.getElementById('temp').textContent = 
+                        Math.round(data.current.temperature_2m);
+                    document.getElementById('feels').textContent = 
+                        Math.round(data.current.apparent_temperature);
+                    document.getElementById('elevation').textContent =
+                        Math.round(data.elevation);
+                } else {
+                    document.getElementById('main-view').style.display = 'none';
+                }
+
+                // Update Wetter Details View
+                if (shouldShowModule('weather')) {
+                    document.getElementById('second-view').style.display = 'flex';
+                    document.getElementById('weather-icon').innerHTML = 
+                        getWeatherIcon(data);
+                    document.getElementById('precipitation').textContent = 
+                        (data.current.rain + data.current.showers).toFixed(1);
+                    document.getElementById('humidity').textContent = 
+                        Math.round(data.current.relative_humidity_2m);
+                } else {
+                    document.getElementById('second-view').style.display = 'none';
+                }
+
+                // Update Wind Details View
+                if (shouldShowModule('wind')) {
+                    document.getElementById('third-view').style.display = 'flex';
+                    document.getElementById('wind').textContent = 
+                        Math.round(data.current.wind_speed_10m);
+                    document.getElementById('wind-direction').textContent = 
+                        Math.round(data.current.wind_direction_10m);
+                } else {
+                    document.getElementById('third-view').style.display = 'none';
+                }
+
+                document.getElementById('error-message').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Fehler beim Abrufen der Daten:', error);
+                document.getElementById('error-message').textContent = 
+                    'Fehler beim Laden der Daten...';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        }
+
+        function checkAndAnimateLocation() {
+            const container = document.getElementById('location');
+            const textElement = document.getElementById('location-text');
+            
+            // Reset animation
+            textElement.classList.remove('animate');
+            
+            // Force browser reflow
+            void textElement.offsetWidth;
+            
+            // Check if text is wider than container
+            if (textElement.scrollWidth > container.clientWidth) {
+                textElement.classList.add('animate');
+            }
+        }
+
+        function updateModuleVisibility() {
+            const container = document.querySelector('.weather-container');
+            const hasVisibleModules = ['temperature', 'weather', 'wind', 'location', 'geo-location']
+                .some(module => shouldShowModule(module));
+            
+            container.style.display = hasVisibleModules ? 'flex' : 'none';
+        }
+        updateModuleVisibility();
+
+        function rotateView() {
+            const views = ['main-view', 'second-view', 'third-view'].filter(view => {
+                const moduleMap = {
+                    'main-view': 'temperature',
+                    'second-view': 'weather',
+                    'third-view': 'wind'
+                };
+                const element = document.getElementById(view);
+                return shouldShowModule(moduleMap[view]) && element && element.style.display !== 'none';
+            });
+            
+            if (views.length <= 1) return;
+            
+            const currentView = document.querySelector('.view.active');
+            currentView?.classList.remove('active');
+            
+            currentViewIndex = (currentViewIndex + 1) % views.length;
+            document.getElementById(views[currentViewIndex])?.classList.add('active');
+        }
+
+        let currentViewIndex = 0;
+
+        
+
+        // Initial update
+        updateWeather();
+
+        // Rotate view every 15 seconds
+        setInterval(rotateView, 15000);
+
+        // Update weather data every 5 minutes
+        setInterval(updateWeather, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
